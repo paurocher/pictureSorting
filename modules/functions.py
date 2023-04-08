@@ -103,10 +103,10 @@ Jut uncomment the function and run this file (Shift+F10)
 
 """-----------------------------------------------------------------------------
 -----------------------------------------------------------------------------"""
-"""Move image and ovie files to appropriate location based on the date.
+"""Move image and movie files to appropriate location based on the date.
 Rename duplicate files to force the relocation.
 !!DO NOT RUN THIS IN ALREADY ORGANIZED BY DATE FOLDERS. OTHERWISE ALL FILES WILL 
-HAVE __BIS__ APPENDED TO THEIR NAME!!"""
+HAVE __BIS__ APPENDED TO THEIR NAME!!!"""
 renamed = []
 not_moved = []
 files = utilities.scan_dir("/media/fuku/T7/Movies/Personal_001")
@@ -123,7 +123,15 @@ for i, file in enumerate(files):
     if os.path.splitext(file)[1] in globals.VIDEO_FORMATS:
         movie = True
     dest_path = utilities.make_dest_path(smallest_date, movie)
-    full_new_file_path = (os.path.join(dest_path, smallest_date.strftime("%Y%m%d_%H%M%S") + os.path.splitext(os.path.split(file)[-1])[-1]))
+    full_new_file_path = (os.path.join(
+        dest_path,
+        smallest_date.strftime("%Y%m%d_%H%M%S")
+        + os.path.splitext(
+            os.path.split(
+                file)[-1]
+        )[-1]
+    )
+    )
     print(file)
     pp(dates)
     print(full_new_file_path)
