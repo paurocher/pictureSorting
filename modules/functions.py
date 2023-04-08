@@ -106,7 +106,7 @@ Jut uncomment the function and run this file (Shift+F10)
 """Move image and movie files to appropriate location based on the date.
 Rename duplicate files to force the relocation.
 !!DO NOT RUN THIS IN ALREADY ORGANIZED BY DATE FOLDERS. OTHERWISE ALL FILES WILL 
-HAVE __BIS__ APPENDED TO THEIR NAME!!"""
+HAVE __BIS__ APPENDED TO THEIR NAME!!!"""
 renamed = []
 not_moved = []
 files = utilities.scan_dir("/media/fuku/T7/Movies/Personal_001")
