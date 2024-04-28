@@ -16,6 +16,7 @@ ALL_FORMATS = [
     '.MTS',
     '.PNG',
     '.TIF',
+    '.\uf029'
     '.app',
     '.avi',
     '.bkup',
@@ -59,12 +60,11 @@ ALL_FORMATS = [
     '.wmv',
     '.xcf',
     '.xmp',
-    '.zip',
-    '.zip Mâcon',
     '.zip Mâcon 2',
-    '.zip cluny',
+    '.zip Mâcon',
     '.zip cluny 2',
-    '.\uf029'
+    '.zip cluny',
+    '.zip',
 ]
 
 
@@ -90,8 +90,8 @@ IMAGE_FORMATS = [
 ]
 
 VIDEO_FORMATS = [
-    '.3gp',
     '.3GP',
+    '.3gp',
     '.AVI',
     '.MOV',
     '.MP4',

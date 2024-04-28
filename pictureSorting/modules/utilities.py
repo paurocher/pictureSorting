@@ -2,8 +2,7 @@ import shutil
 import os
 import re
 from datetime import datetime
-import globals
-from pprint import pprint as pp
+from pictureSorting.modules import globals
 import exifread
 from zlib import crc32
 import ffmpeg
@@ -93,7 +92,7 @@ def get_file_dates(image_path):
     Returns: list
     """
 
-    dates = []
+    dates = {}
     if os.path.isdir(image_path):
         return
 
@@ -106,22 +105,26 @@ def get_file_dates(image_path):
         try:
             creation_t = probe["format"]["tags"]["creation_time"]
             # print(creation_t)
-            dates.append(datetime.strptime(creation_t, "%Y-%m-%dT%H:%M:%S.%fZ"))
+            dates["exif"] = (datetime.strptime(creation_t, "%Y-%m-%dT%H:%M:%S.%fZ"))
         except Exception as e:
             # print(e)
             # pp(probe)
             # print("\n\n\n\n\n")
             pass
         try:
-            dates.append(datetime.fromtimestamp(os.path.getmtime(image_path)))
+            # last modification
+            dates["last_modif"] = (datetime.fromtimestamp(os.path.getmtime(image_path)))
         except:
             pass
         try:
-            dates.append(datetime.fromtimestamp(os.path.getctime(image_path)))
+            # time of the last metadata change
+            dates["metadata_change"] = (datetime.fromtimestamp(os.path.getctime(
+                image_path)))
         except:
             pass
         try:
-            dates.append(datetime.fromtimestamp(os.path.getatime(image_path)))
+            # time of last access
+            dates["last_access"] = (datetime.fromtimestamp(os.path.getatime(image_path)))
         except:
             pass
         return dates
@@ -133,13 +136,13 @@ def get_file_dates(image_path):
             for tag, value in tags.items():
                 if "date" in tag.lower():
                     if re.match("\d\d\d\d:\d\d:\d\d \d\d:\d\d:\d\d", str(value)):
-                        dates.append(datetime.strptime(str(value), "%Y:%m:%d %H:%M:%S"))
+                        dates["exif"] = (datetime.strptime(str(value), "%Y:%m:%d %H:%M:%S"))
         except Exception:
             pass
         try:
-            dates.append(datetime.fromtimestamp(os.path.getctime(image_path)))
-            dates.append(datetime.fromtimestamp(os.path.getmtime(image_path)))
-            dates.append(datetime.fromtimestamp(os.path.getatime(image_path)))
+            dates["last_modif"] = (datetime.fromtimestamp(os.path.getmtime(image_path)))
+            dates["metadata_change"] = (datetime.fromtimestamp(os.path.getctime(image_path)))
+            dates["last_access"] = (datetime.fromtimestamp(os.path.getatime(image_path)))
         except:
             pass
     return dates
@@ -148,7 +151,7 @@ def get_file_dates(image_path):
 def get_earlier_date(dates):
     """Gets the earlier date from a set of dates
     :param date: list"""
-
+    dates = [date for k, date in dates.items()]
     return min(dates)
 
 
@@ -164,7 +167,6 @@ def make_dest_path(date, movie=False):
     media = "Pictures"
     if movie:
         media = "Movies/Personal"
-
     year = str(date.year)
     month = "{:0>2}".format(date.month)
     day = "{:0>2}".format(date.day)

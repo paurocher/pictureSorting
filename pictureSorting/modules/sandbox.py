@@ -1,9 +1,8 @@
-import utilities
+from pictureSorting.modules import utilities
 import shutil
 import os
 import datetime
 import re
-from pprint import pprint as pp
 
 black_list = []
 files = utilities.scan_dir("/media/fuku/T7/Movies/Personal_001/")
@@ -51,3 +50,17 @@ for i, file in enumerate(files):
     print(i, " / ", len(files))
 
 "1297"
+
+
+
+
+
+
+unzip file.zip -d destination_folder
+
+unzip /home/fuku/Downloads/takeout-20240317T213418Z-001.zip -d /home/fuku/Desktop/100CANON/gphotos_clot
+unzip /home/fuku/Downloads/takeout-20240317T213418Z-002.zip -d /home/fuku/Desktop/100CANON/gphotos_clot
+unzip /home/fuku/Downloads/takeout-20240317T213418Z-003.zip -d /home/fuku/Desktop/100CANON/gphotos_clot
+unzip /home/fuku/Downloads/takeout-20240317T213418Z-004.zip -d /home/fuku/Desktop/100CANON/gphotos_clot
+unzip /home/fuku/Downloads/takeout-20240317T213418Z-005.zip -d /home/fuku/Desktop/100CANON/gphotos_clot
+unzip /home/fuku/Downloads/takeout-20240317T213418Z-006.zip -d /home/fuku/Desktop/100CANON/gphotos_clot
