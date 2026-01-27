@@ -106,4 +106,9 @@ VIDEO_FORMATS = [
     '.wmv',
 ]
 
+ACTIONS = [
+    "a",
+    "b",
+    "c"
+]
 

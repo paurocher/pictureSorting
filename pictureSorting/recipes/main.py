@@ -1,7 +1,7 @@
 """
 This file has the functions to run. The other files have the functions defined
 but are there only to help the functions on this file to run.
-This is the place to go to to do everything:
+This is the place to go to do everything:
     - move files
     - delete files
     - change exif data,
