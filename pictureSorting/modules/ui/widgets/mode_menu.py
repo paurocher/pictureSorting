@@ -17,37 +17,21 @@ class ModeMenu(QPushButton):
         super().__init__()
 
         self.parent = parent
+        self.menu_actions = {}
 
         self.setMinimumWidth(200)
 
         self.menu = QMenu(self)
         self.setMenu(self.menu)
-        self.build_actions()
 
-    def build_actions(self):
-        action_a_name = "Sort Pictures"
-        self.action_a = QAction(action_a_name, self)
-        self.action_a.triggered.connect(lambda: self.action_a_do(action_a_name))
-        self.menu.addAction(self.action_a)
+    def add_action(self, index: int, name: str) -> None:
+        """Create a new action and add it to the actions dict."""
+        action = QAction(name, self)
+        action.triggered.connect(lambda: self.generic_action_do(index, name))
+        self.menu_actions[name] = action
+        self.menu.addAction(action)
 
-        action_b_name = "Covert HEIF to JPG"
-        self.action_b = QAction(action_b_name, self)
-        self.action_b.triggered.connect(lambda: self.action_b_do(action_b_name))
-        self.menu.addAction(self.action_b)
-
-        action_c_name = "Remove hidden files"
-        self.action_c = QAction(action_c_name, self)
-        self.action_c.triggered.connect(lambda: self.action_c_do(action_c_name))
-        self.menu.addAction(self.action_c)
-
-    def action_a_do(self, text):
+    def generic_action_do(self, index:int, text: str) -> None:
         self.setText(text)
-        self.parent.tabs.setCurrentIndex(1)
-
-    def action_b_do(self, text):
-        self.setText(text)
-        self.parent.tabs.setCurrentIndex(2)
-
-    def action_c_do(self, text):
-        self.setText(text)
-        self.parent.tabs.setCurrentIndex(3)
+        self.parent.tabs.setCurrentIndex(index)
+        self.parent.current_tab_index = index

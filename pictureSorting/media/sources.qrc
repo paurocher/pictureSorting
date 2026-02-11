@@ -1,0 +1,10 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource>
+    <file>cross.png</file>
+    <file alias="down_arrow.png">triangle.png</file>
+    <file alias="handle.png">dots.png</file>
+    <file>terminal_bottom.png</file>
+    <file>terminal_right.png</file>
+  </qresource>
+</RCC>

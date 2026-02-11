@@ -44,6 +44,7 @@ import shutil
 # delete_xmp_files("/media/fuku/T7/Pictures")
 
 """Move to trash hidden files (starting with ".")"""
+"""MOVED INTO TAB_03"""
 # source_folder = "/media/fuku/T7/Pictures/2022/"
 # dest_folder = "/media/fuku/T7/hidden/"
 # paths = utilities.scan_dir(source_folder)

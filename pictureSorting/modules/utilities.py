@@ -1,12 +1,40 @@
-import shutil
+from datetime import datetime
+from functools import lru_cache
+from pathlib import Path
+from pictureSorting.modules import globals
+from zlib import crc32
+import exifread
+import ffmpeg
 import os
 import re
-from datetime import datetime
-from pictureSorting.modules import globals
-import exifread
-from zlib import crc32
-import ffmpeg
+import shutil
+import subprocess
+from typing import List, Dict, Any
 # from binascii import crc32
+
+
+def reset_test_folders():
+    """Reset the test folders.
+
+    Will be triggered if the module is run with th -r flag"""
+    print("Resetting test folders")
+
+    command = "/home/fuku/Desktop"
+    print("  ", command)
+    os.chdir(command)
+
+    command = ["rm", "-rf", "test", "test_trash"]
+    print("  ", command)
+    subprocess.run(command)
+
+    command = ["cp", "-r", "test_backup", "test"]
+    print("  ", command)
+    subprocess.run(command)
+
+    command =["mkdir", "test_trash"]
+    print("  ", command)
+    subprocess.run(command)
+
 
 def scan_dir(path, recursive=True, documents=[]):
     """Scans a dir and outputs all documents paths.
@@ -21,7 +49,7 @@ def scan_dir(path, recursive=True, documents=[]):
                 scan_dir(element.path, True, documents)
         # documents.add(element.path)
         if os.path.isfile(element):
-            documents.append(element.path)
+            documents.append(Path(element.path))
     return documents
 """Changed documents from set() to list() so we can store duplicates"""
 
@@ -257,10 +285,11 @@ def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
 
 def subdivide_folder_contents(src, max_files):
     """From a folder with lots of files, make sub-folders wih x amount of files.
-    src: paths: str
-    max_files: int
+    Args:
+        src: paths: str
+        max_files: int
     """
-    src_contents = utilities.scan_dir(src, recursive=False)
+    src_contents = scan_dir(src, recursive=False)
     print(len(src_contents))
     # print(src_contents)
 
@@ -274,17 +303,20 @@ def subdivide_folder_contents(src, max_files):
         shutil.move(file, sub_folder)
 
 
-def find_hidden(paths=[]):
-    """Outputs paths starting with "." from a list of paths.
+def find_hidden(paths: List[Path] = []) -> Dict[Path, Dict[str, Any]]:
+    """Find hidden paths starting with "." from a list of paths.
     Args:
         paths: list
-    Returns: dict: path: file_size
+    Returns (dict):
+        Path: {size: float}
     """
     hidden_paths = {}
     for path in paths:
-        if os.path.split(path)[-1].startswith("."):
-            hidden_paths[path] = os.stat(path).st_size  / (1024 * 1024)
-    hidden_paths_s = {k: v for k, v in sorted(hidden_paths.items(), key=lambda item: item[1])}
+        if path.stem.startswith("."):
+            hidden_paths[path] = round(path.stat().st_size  / (1024 * 1024), 4)
+    hidden_paths_s = {
+        k: {"size": v} for k, v in sorted(hidden_paths.items(), key=lambda item: item[1])
+    }
     return hidden_paths_s
 
 
@@ -303,5 +335,5 @@ def check_existing_filename(folder, file_name):
         return True
     return False
 
-"""Make a search and move for the mvies. Weĺl place them all in a separate
+"""Make a search and move for the movies. Weĺl place them all in a separate
 structure just like the one for the pictures: YYYY/MM/DD"""

@@ -1,6 +1,5 @@
 """Neutral tab.
 With info about version, available functions, a kind of bg image, ..."""
-from PyQt5.QtGui import QPixmap
 from Qt.QtWidgets import (
     QMainWindow,
     QApplication,
@@ -9,12 +8,14 @@ from Qt.QtWidgets import (
     QVBoxLayout,
     QStackedLayout,
     QLabel,
+    QLayout,
     QPushButton,
     QMenuBar,
     QMenu,
     QAction,
     QTabWidget,
     QStackedWidget,
+    QSizePolicy,
 )
 from Qt.QtCore import (
     QSize,
@@ -24,19 +25,24 @@ from Qt.QtGui import (
     QPixmap,
     QPainter
 )
+from .tab import Tab
 
-class Tab0(QWidget):
-    def __init__(self):
-        super().__init__()
+class Tab00(Tab):
+    def __init__(self, parent, previous_tab):
+        super().__init__(parent)
 
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        self.previous_tab = previous_tab
+        self.action_name = "Picture Operations"
+        self.build_ui()
 
+    def build_ui(self):
         text_layout = QVBoxLayout()
         text_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        text_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
 
-        title = QLabel("Picture Operations\n")
+        title = QLabel(f"{self.action_name}\n")
         title.setStyleSheet("font-size: 20px; font-weight: bold")
+        # title.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
 
         about = QLabel(
             "Little tool to organize pictures and movies based on their "
@@ -52,7 +58,9 @@ class Tab0(QWidget):
         text_layout.addWidget(title)
         text_layout.addWidget(about)
 
-        layout.addLayout(text_layout)
-        layout.addStretch()
+        self.layout.addLayout(text_layout)
+        self.layout.addStretch()
 
+    def mouseReleaseEvent(self, event):
+        self.parent.tabs.setCurrentIndex(self.previous_tab)
 
