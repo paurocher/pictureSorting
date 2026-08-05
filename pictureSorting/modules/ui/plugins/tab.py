@@ -24,8 +24,8 @@ class Tab(QWidget):
         super().__init__()
 
         self.parent = parent
-        self.action_name = ""
 
+        self.action_name = ""
         self.about_label = QLabel()
         self.about_text = ""
 
@@ -80,9 +80,9 @@ class Tab(QWidget):
 
         self.about_label.setText(self.about_text)
         self.about_label.setMinimumHeight(10)
-        self.about_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        self.about_label.setWordWrap(True)
+        self.about_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         text_layout.addWidget(self.about_label)
-
 
         # self.layout.addStretch()
         # self.layout.addLayout(text_layout)
@@ -101,7 +101,7 @@ class Tab(QWidget):
     def build_execute_ui(self) -> None:
         """The 'execute' side of things.
 
-        Mainly the 'dry-run' and 'run' buttons.
+        Mainly the 'dry-run' and 'run' checkboxes.
         """
         self.top_layout.addStretch()
 
@@ -115,6 +115,7 @@ class Tab(QWidget):
         self.recursive_checkbox.setToolTip(
             "Scan all subfolders recursively."
         )
+        self.recursive_checkbox.setCheckState(Qt.CheckState.Checked)
         bottom_layout.addWidget(self.recursive_checkbox)
 
         self.dry_run_checkbox = QCheckBox("Dry Run")
@@ -137,7 +138,6 @@ class Tab(QWidget):
         # self.layout.addWidget(separator)
 
         self.top_layout.addWidget(bottom)
-
 
     def build_terminal_ui(self):
         self.terminal = Terminal(self)

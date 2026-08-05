@@ -7,8 +7,8 @@ from .modules.ui import main
 from .modules.utilities import reset_test_folders
 
 parser = argparse.ArgumentParser(
-    prog='ProgramName',
-    description='What the program does',
+    prog='PictureSorter',
+    description='A program to organize pictures, move files, clean folders, ...',
     epilog='Text at the bottom of help'
 )
 parser.add_argument("-r", action="store_true")

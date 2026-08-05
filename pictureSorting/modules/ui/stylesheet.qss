@@ -159,10 +159,21 @@ QComboBox::down-arrow
      image: url(:down_arrow.png);
 }
 
-QGroupBox:focus
+QGroupBox
 {
-border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);
+border: 1px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #222222, stop: 1 #222222);
+border-radius: 5px;
+margin-top: 2ex;  /*leave space at the top for the title */
 }
+QGroupBox::focus
+{
+border: 1px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);
+border-radius: 5px;
+margin-top: 2ex;  /*leave space at the top for the title */
+}
+
+
+
 
 QTextEdit:focus
 {

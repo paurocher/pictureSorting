@@ -1,3 +1,12 @@
+Launch:
+```
+`source /home/fuku/PycharmProjects/venvs/universal_py3.8/bin/activate
+cd /home/fuku/PycharmProjects/pictureSorting/
+python3 -m pictureSorting
+`````
+
 cx_freeze
 
-I can create a different module for each tab
+https://github.com/mottosso/Qt.py/tree/master
+
+

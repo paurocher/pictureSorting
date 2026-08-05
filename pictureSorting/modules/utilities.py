@@ -1,78 +1,121 @@
+import copy
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from pictureSorting.modules import globals
+from pprint import pprint as pp
+from typing import List, Dict, Any, Tuple
 from zlib import crc32
 import exifread
 import ffmpeg
+import logging
 import os
 import re
 import shutil
 import subprocess
-from typing import List, Dict, Any
 # from binascii import crc32
 
+from Qt.QtWidgets import (
+    QFileDialog,
+)
 
-def reset_test_folders():
-    """Reset the test folders.
-
-    Will be triggered if the module is run with th -r flag"""
-    print("Resetting test folders")
-
-    command = "/home/fuku/Desktop"
-    print("  ", command)
-    os.chdir(command)
-
-    command = ["rm", "-rf", "test", "test_trash"]
-    print("  ", command)
-    subprocess.run(command)
-
-    command = ["cp", "-r", "test_backup", "test"]
-    print("  ", command)
-    subprocess.run(command)
-
-    command =["mkdir", "test_trash"]
-    print("  ", command)
-    subprocess.run(command)
+from pictureSorting.modules import globals as glb
 
 
-def scan_dir(path, recursive=True, documents=[]):
-    """Scans a dir and outputs all documents paths.
-    :param path: str
-    :param recursive: Bool
-    :return: list()
+# This stops the exifread.process_file output on the terminal
+#  If it messes up other logs I need I can move this to where
+#  exifread.process_file happens.
+logging.basicConfig(level=logging.ERROR)
+
+
+def build_dates_dst_path(date):
+    """Build a destination folder path based on a date.
+    Args:
+        date: datetime.date
+
+    Returns: Path
     """
-    dir_contents = os.scandir(path)
-    for element in dir_contents:
-        if os.path.isdir(element):
-            if recursive:
-                scan_dir(element.path, True, documents)
-        # documents.add(element.path)
-        if os.path.isfile(element):
-            documents.append(Path(element.path))
-    return documents
-"""Changed documents from set() to list() so we can store duplicates"""
+    year = str(date.year)
+    month = "{:0>2}".format(date.month)
+    day = "{:0>2}".format(date.day)
+    path = Path().joinpath(year, month, day)
+
+    return path
 
 
-def move_by_extension(extensions, file, destination):
-    """Moves a file to a destination
-    :param extensions: list
-    :param origin: str
-    :param destination:v str
-    :return: None
+def build_temp_dst_paths() -> Path:
+    """Build temp dst path.
+
+    The resulting path ha not been checked for duplicates."""
+
+    for path, values in glb.SRC_DIR_FILES.items():
+        values["temp_dest_path"] = glb.DEST_DIR / path.parts[-1]
+
+
+
+def check_existing_filename(folder, file_name):
+    """Checks if a file with the same name and extension already exists in the
+    folder.
+    Args:
+        folder: str
+        file_name: str
+
+    Returns: Bool
     """
 
-    file_name = os.path.basename(file)
-    dest_contents = [os.path.basename(file.path) for file in os.scandir(destination)]
-    # pp(dest_contents)
+    contents = os.listdir(folder)
+    if file_name in contents:
+        return True
+    return False
 
-    if file_name in dest_contents:
-        print("A file with the same name exists in the destination folder")
-        return
-    for ext in extensions:
-        if os.path.splitext(file)[1] == ext:
-            # print(ext, file, destination)
-            shutil.move(file, destination)
+
+def check_paths(field_obj, field_name) -> Tuple[bool, str, Path]:
+    """Make sure the UI path field is not empty and the path exists.
+
+    If all is good: return True, no messages to print to terminal, and the
+    string converted to a Path().
+    If something is wrong: return false, message of what went wrong to print
+    to terminal, and None.
+
+    Args:
+        field_obj ():
+        field_name ():
+
+    Returns:
+        tuple:
+            bool: whether all checks passed
+            str: the messages to print to the terminal
+            Path: src path
+    """
+    checks_passed = True
+    message = []
+
+    field_text = field_obj.text()
+
+    if not field_text:
+        message.append(f"{field_name} must not be empty.")
+        checks_passed = False
+        return checks_passed, "<br>".join(message), None
+    path = Path(field_text)
+    if not path.exists():
+        message.append(f"{field_name} path does not exist.")
+        checks_passed = False
+        return checks_passed, "<br>".join(message), None
+    if not path.is_dir():
+        message.append(f"{field_name} path is not a directory.")
+        checks_passed = False
+        return checks_passed, "<br>".join(message), None
+
+    return checks_passed, "<br>".join(message), path
+
+
+def clean_dst_files():
+    """Remove the _BIS_ from the dest paths.
+
+    So each instance of a pat counts as one when we rename the file
+    paths to move.
+    """
+    for i, path in enumerate(glb.DEST_DIR_FILES):
+        glb.DEST_DIR_FILES[i] = Path(str(path).replace("_BIS_", ""))
 
 
 def delete_xmp_files(folder):
@@ -88,143 +131,6 @@ def delete_xmp_files(folder):
                 continue
             print("Moved to trash:", file)
     print("Moved to trash {} files.".format(counter))
-
-
-
-def is_picture(path):
-    """Checks wether the given path is a picture or not.
-    :param path: str
-    :return: True / False
-    """
-    if os.path.splitext(path)[1] in globals.IMAGE_FORMATS:
-        return True
-    return False
-
-def is_movie(path):
-    """Checks wether the given path is a movie or not.
-    Args:
-        path: str
-
-    Returns: Bool
-    """
-    if os.path.splitext(path)[1] in globals.VIDEO_FORMATS:
-        return True
-    return False
-
-
-def get_file_dates(image_path):
-    """Gets the exif dates of an image file.
-    Args:
-        image_path: str
-
-    Returns: list
-    """
-
-    dates = {}
-    if os.path.isdir(image_path):
-        return
-
-    if is_movie(image_path):
-        # print(image_path)
-        probe = ffmpeg.probe(image_path)
-        # pp(probe)
-        creation_t = None
-        # get creation time from metadata
-        try:
-            creation_t = probe["format"]["tags"]["creation_time"]
-            # print(creation_t)
-            dates["exif"] = (datetime.strptime(creation_t, "%Y-%m-%dT%H:%M:%S.%fZ"))
-        except Exception as e:
-            # print(e)
-            # pp(probe)
-            # print("\n\n\n\n\n")
-            pass
-        try:
-            # last modification
-            dates["last_modif"] = (datetime.fromtimestamp(os.path.getmtime(image_path)))
-        except:
-            pass
-        try:
-            # time of the last metadata change
-            dates["metadata_change"] = (datetime.fromtimestamp(os.path.getctime(
-                image_path)))
-        except:
-            pass
-        try:
-            # time of last access
-            dates["last_access"] = (datetime.fromtimestamp(os.path.getatime(image_path)))
-        except:
-            pass
-        return dates
-
-
-    with open(image_path, 'rb') as image:
-        try:
-            tags = exifread.process_file(image)
-            for tag, value in tags.items():
-                if "date" in tag.lower():
-                    if re.match("\d\d\d\d:\d\d:\d\d \d\d:\d\d:\d\d", str(value)):
-                        dates["exif"] = (datetime.strptime(str(value), "%Y:%m:%d %H:%M:%S"))
-        except Exception:
-            pass
-        try:
-            dates["last_modif"] = (datetime.fromtimestamp(os.path.getmtime(image_path)))
-            dates["metadata_change"] = (datetime.fromtimestamp(os.path.getctime(image_path)))
-            dates["last_access"] = (datetime.fromtimestamp(os.path.getatime(image_path)))
-        except:
-            pass
-    return dates
-
-
-def get_earlier_date(dates):
-    """Gets the earlier date from a set of dates
-    :param date: list"""
-    dates = [date for k, date in dates.items()]
-    return min(dates)
-
-
-def make_dest_path(date, movie=False):
-    """Makes a destination folder path based on a date if that dest. path
-    doesn't exist.
-    Args:
-        date: datetime.date
-        movie: Bool
-
-    Returns: str
-    """
-    media = "Pictures"
-    if movie:
-        media = "Movies/Personal"
-    year = str(date.year)
-    month = "{:0>2}".format(date.month)
-    day = "{:0>2}".format(date.day)
-    path = os.path.join("/media/fuku/T7/{}".format(media), year, month, day)
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-        print("created path:", path)
-
-    return path
-
-
-def get_formats(path, formats=set()):
-    """Gets a list of formats from a path and its recursive contents.
-    :param path:
-    :param formats:
-    :return:
-    """
-    dir_contents = os.scandir(path)
-    formats = formats
-    for element in dir_contents:
-        if element.is_dir():
-            get_formats(element.path, formats)
-        elif element.is_file():
-            formats.add(os.path.splitext(element.path)[1])
-    return formats
-
-
-def seconds_to_date(seconds):
-    return datetime.fromtimestamp(seconds).strftime("%A, %B %d, %Y %I:%M:%S")
 
 
 def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
@@ -283,6 +189,299 @@ def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
     print("Total files removed: {}".format(len(removed)))
 
 
+def find_hidden() -> Dict[Path, Dict[str, Any]]:
+    """Find hidden paths starting with "." from a list of paths.
+
+    Returns (dict):
+        Path: {size: float}
+    """
+    hidden_paths = {}
+    for path, values in glb.SRC_DIR_FILES.items():
+        if path.stem.startswith("."):
+            hidden_paths[path] = values
+    return hidden_paths
+
+
+def get_all_dst_dir_paths() -> list:
+    """Get all dst dir file paths as a list"""
+    # print("dst_path", glb.DST_DIR)
+    files = scan_dir(glb.DEST_DIR, True, None)
+    glb.DEST_DIR_FILES = list(files.keys())
+    # print("glb.DST_DIR_FILES")
+    # pp(glb.DST_DIR_FILES)
+
+
+def get_earlier_date(dates):
+    """Gets the earlier date from a set of dates
+    :param date: list"""
+    dates = [date for k, date in dates.items()]
+    return min(dates)
+
+
+def get_file_dates(image_path: Path, media_type):
+    """Gets the exif dates of an image file.
+    Args:
+        image_path (Path):
+
+    Returns: dict
+    """
+    dates = {}
+
+    if media_type == "movie":
+        probe = ffmpeg.probe(image_path)
+        # pp(probe)
+        creation_t = None
+        # get creation time from metadata
+        try:
+            creation_t = probe["format"]["tags"]["creation_time"]
+            # print(creation_t)
+            dates["exif"] = (datetime.strptime(creation_t, "%Y-%m-%dT%H:%M:%S.%fZ"))
+        except Exception as e:
+            # print(e)
+            # pp(probe)
+            # print("\n\n\n\n\n")
+            pass
+        try:
+            # last modification date from file
+            dates["last_modif"] = (
+                datetime.fromtimestamp(image_path.stat().st_mtime)
+            )
+        except:
+            pass
+        try:
+            # time of the last metadata change
+            dates["metadata_change"] = (
+                datetime.fromtimestamp(image_path.stat().st_ctime)
+            )
+        except:
+            pass
+        try:
+            # time of last access
+            dates["last_access"] = (
+                datetime.fromtimestamp(image_path.stat().st_atime)
+                    )
+        except:
+            pass
+        return dates
+
+    elif media_type == "picture":
+        with open(image_path, 'rb') as image:
+            try:
+                tags = exifread.process_file(image)
+                for tag, value in tags.items():
+                    if "date" in tag.lower():
+                        if re.match(
+                                "\d\d\d\d:\d\d:\d\d \d\d:\d\d:\d\d",
+                                str(value)
+                        ):
+                            dates["exif"] = (
+                                datetime.strptime(str(value),
+                                                  "%Y:%m:%d %H:%M:%S")
+                            )
+            except Exception:
+                pass
+            try:
+                dates["last_modif"] = (
+                    datetime.fromtimestamp(os.path.getmtime(image_path))
+                )
+                dates["metadata_change"] = (
+                    datetime.fromtimestamp(os.path.getctime(image_path))
+                )
+                dates["last_access"] = (
+                    datetime.fromtimestamp(os.path.getatime(image_path))
+                )
+            except:
+                pass
+        return dates
+
+
+def get_formats(path, formats=set()):
+    """Gets a list of formats from a path and its recursive contents.
+    :param path:
+    :param formats:
+    :return:
+    """
+    dir_contents = os.scandir(path)
+    formats = formats
+    for element in dir_contents:
+        if element.is_dir():
+            get_formats(element.path, formats)
+        elif element.is_file():
+            formats.add(os.path.splitext(element.path)[1])
+    return formats
+
+
+def get_size(path):
+    """Get the size of a file in MB."""
+    return round(path.stat().st_size  / (1024 * 1024), 4)
+
+
+def is_movie(path: Path):
+    """Checks whether the given path is a movie or not.
+    Args:
+        path: str
+
+    Returns: bool
+    """
+    if path.suffix in glb.VIDEO_FORMATS:
+        return True
+    return False
+
+
+def is_picture(path: Path):
+    """Checks whether the given path is a picture or not.
+
+    Args:
+        path:
+
+    Returns: bool
+    """
+    if path.suffix in glb.IMAGE_FORMATS:
+        return True
+    return False
+
+
+def filter_by_extension(extensions: list):
+    """Filter out paths that do not have the specified extensions.
+
+        Args:
+            extensions: list of extensions to filter by
+    """
+    selected = {}
+    for path, v in glb.SRC_DIR_FILES.items():
+        if path.suffix[1:] in extensions:
+            selected.update({path: v})
+    glb.SRC_DIR_FILES = selected
+
+def rename_duplicates():
+    """Rename duplicated files.
+
+    Iterates through all keys of a paths dict and adds the "rename" key if
+    the path needs a __BIS__ appended to it
+
+    I am doing it like this, instead of on they fly by listing the dst dir.
+    If DRY_RUN is on, files will not be moved to their dst location,
+    so each time I list the dst dir to figure out duplicate names I will
+    allways get the same list (of the already existing files), thus I will
+    never be able to figure out if there are duplicate names.
+
+    The dst_paths list will grow each time we
+
+    glb.SRC_DIR_FILES structure:
+        {Path()1: {"size": float, "temp_dest_path": str}}
+
+    Returns:
+        dict: Path {"size": float, "temp_dest_path": str, "final_dest_path": str}
+
+    """
+    # print("src_paths")
+    # pp(glb.SRC_DIR_FILES)
+    # print("dst_paths")
+    # pp(glb.DEST_DIR_FILES)
+
+    existing_file_names = copy.copy(glb.DEST_DIR_FILES)
+
+    for path, details in glb.SRC_DIR_FILES.items():
+        details["final_dest_path"] = None
+        temp_path = details["temp_dest_path"]
+        stem = temp_path.stem
+        suffix = temp_path.suffix
+
+        count = len([s for s in existing_file_names if s == temp_path])
+        stem = stem + ("_BIS_" * count)
+        final_dest_path = glb.DEST_DIR / stem
+        final_dest_path = final_dest_path.with_suffix(suffix)
+        details["final_dest_path"] = final_dest_path
+
+        existing_file_names.append(temp_path)
+
+
+
+def open_file_browser(target_field):
+    # TODO: if target field already has a path, make the file dialog open up
+    #  in that path.
+    target = Path().home()
+    if target_field.text():
+        target = str(Path(target_field.text()).absolute())
+    print("Targtet", target)
+    file_dialog = QFileDialog()
+    file_dialog.setOption(QFileDialog.DontUseNativeDialog)
+    file_dialog.setDirectory(target) # Does not work!!! :(
+
+    # selected_dir = QFileDialog.getExistingDirectory(None, target)
+
+    selected_dir = file_dialog.getExistingDirectory(
+        caption="Select a folder"
+    )
+    target_field.setText(selected_dir)
+
+
+def reset_test_folders():
+    """Reset the test folders.
+
+    Will be triggered if the module is run with the -r flag"""
+    print("Resetting test folders")
+
+    command = "/home/fuku/Desktop"
+    print("  ", command)
+    os.chdir(command)
+
+    command = ["rm", "-rf", "test", "test_pic_trash", "test_mov_trash"]
+    print("  ", command)
+    subprocess.run(command)
+
+    command = ["cp", "-r", "test_backup", "test"]
+    print("  ", command)
+    subprocess.run(command)
+
+    command = ["cp", "-r", "test_pic_trash_backup", "test_pic_trash"]
+    print("  ", command)
+    subprocess.run(command)
+
+    command = ["mkdir", "test_mov_trash"]
+    print("  ", command)
+    subprocess.run(command)
+
+
+def scan_dir(
+        path: Path,
+        recursive: bool = True,
+        documents: bool = None) -> List[Path]:
+    """Scans a dir and outputs all documents paths.
+
+    Args:
+        path (Path):
+        recursive (bool):
+        documents (bool):
+
+    Returns:
+        dict : {Path: {"size": int}}
+    """
+    if not documents:
+        documents = []
+
+    path_obj = Path(path)
+
+    if recursive:
+        # Use rglob for recursive search
+        for item in path_obj.rglob("*"):
+            if item.is_file():
+                documents.append(item)
+    else:
+        # Use iterdir for non-recursive search
+        for item in path_obj.iterdir():
+            if item.is_file():
+                documents.append(item)
+
+    documents = {d: {"size": get_size(d)} for d in documents}
+
+    return documents
+
+
+def seconds_to_date(seconds):
+    return datetime.fromtimestamp(seconds).strftime("%A, %B %d, %Y %I:%M:%S")
+
+
 def subdivide_folder_contents(src, max_files):
     """From a folder with lots of files, make sub-folders wih x amount of files.
     Args:
@@ -303,37 +502,6 @@ def subdivide_folder_contents(src, max_files):
         shutil.move(file, sub_folder)
 
 
-def find_hidden(paths: List[Path] = []) -> Dict[Path, Dict[str, Any]]:
-    """Find hidden paths starting with "." from a list of paths.
-    Args:
-        paths: list
-    Returns (dict):
-        Path: {size: float}
-    """
-    hidden_paths = {}
-    for path in paths:
-        if path.stem.startswith("."):
-            hidden_paths[path] = round(path.stat().st_size  / (1024 * 1024), 4)
-    hidden_paths_s = {
-        k: {"size": v} for k, v in sorted(hidden_paths.items(), key=lambda item: item[1])
-    }
-    return hidden_paths_s
-
-
-def check_existing_filename(folder, file_name):
-    """Checks if a file with the same name and extension already exists in the
-    folder.
-    Args:
-        folder: str
-        file_name: str
-
-    Returns: Bool
-    """
-
-    contents = os.listdir(folder)
-    if file_name in contents:
-        return True
-    return False
 
 """Make a search and move for the movies. Weĺl place them all in a separate
 structure just like the one for the pictures: YYYY/MM/DD"""

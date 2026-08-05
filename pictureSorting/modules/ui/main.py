@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(stylesheet.read_text())
 
         self.setWindowTitle("Picture Sorter")
-        self.setMinimumSize(QSize(640, 480))
+        self.setMinimumSize(QSize(640, 560))
 
         self.central_widget = QWidget(self)
         self.central_layout = QVBoxLayout(self.central_widget)
@@ -62,6 +62,9 @@ class MainWindow(QMainWindow):
         self.create_menu_actions()
         self.create_menubar()
 
+        self.current_tab_index = 4
+        self.tabs.setCurrentIndex(4)
+
 
     def create_menu_actions(self):
         """Create the actions for the menu bar.
@@ -81,11 +84,20 @@ class MainWindow(QMainWindow):
 
         self.terminal_show_action = QAction("Show Terminal", self)
         self.terminal_hide_action = QAction("Hide Terminal", self)
+
         self.terminal_clear_action = QAction("Clear Current Terminal", self)
         self.terminal_clear_action.setShortcut("Ctrl+Shift+G")
         self.terminal_clear_action.triggered.connect(self.terminal_clear)
+
         self.terminal_bottom_action = QAction("Terminal to Bottom", self)
+        self.terminal_bottom_action.triggered.connect(
+            lambda: self.terminal_orientation("bottom")
+        )
+
         self.terminal_right_action = QAction("Terminal to Right", self)
+        self.terminal_right_action.triggered.connect(
+            lambda: self.terminal_orientation("right")
+        )
 
     def helper(self):
         """Function to test shit.
@@ -154,6 +166,16 @@ class MainWindow(QMainWindow):
     def terminal_clear(self):
         self.tabs.widget(self.current_tab_index).terminal.clear()
 
+    def terminal_orientation(self, orientation):
+        if orientation == "right":
+            self.tabs.widget(self.current_tab_index).splitter.setOrientation(
+                Qt.Orientation.Horizontal
+            )
+        else:
+            self.tabs.widget(self.current_tab_index).splitter.setOrientation(
+                Qt.Orientation.Vertical
+            )
+
     def show_about_tab(self):
         self.tabs.widget(0).previous_tab = self.current_tab_index
         self.tabs.setCurrentIndex(0)
@@ -168,7 +190,6 @@ class MainWindow(QMainWindow):
                     self.mode_menu.menu.actions()[key - 1].text()
                 )
                 self.tabs.setCurrentIndex(key)
-
 
     def quit_app(self):
         self.close()

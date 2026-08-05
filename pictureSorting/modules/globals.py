@@ -112,3 +112,6 @@ ACTIONS = [
     "c"
 ]
 
+DEST_DIR = None
+SRC_DIR_FILES = []
+DEST_DIR_FILES = []

@@ -1,4 +1,4 @@
-"""Move / delete files by extension.
+"""Move / files if they match a specific extension.
 
 This moves all files into one single dir.
 This will not build the year/month/day dir structure.
@@ -8,36 +8,42 @@ from functools import lru_cache
 import os
 from pathlib import Path
 from pprint import pprint as pp
+
 from Qt.QtWidgets import (
-    QWidget,
     QCheckBox,
+    QWidget,
     QGridLayout,
     QLabel,
     QPushButton,
     QSizePolicy,
     QLineEdit,
-    QFileDialog
+    QFileDialog,
+)
+from Qt.QtGui import (
+    QRegExpValidator
 )
 from Qt.QtCore import (
     Qt,
+    QRegExp,
 )
+
+import re
 from shutil import move
 from typing import Tuple, Any, Dict
 
 from ... import utilities as utils
-from .tab import Tab
 from ... import globals as glb
+from .tab import Tab
 
-class Tab03(Tab):
+class Tab04(Tab):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.action_name = "03 Move hidden files"
+        self.action_name = "04 Move files by extension"
         self.about_text = (
-            "Find and move hidden files (starting with a dot) to the trash or "
-            "a specific folder.\n"
-            "Note that folders will be kept untouched, even if their name "
-            "starts with a dot."
+            "Find and move files with a specific extension to a specific "
+            "folder.\n"
+            "Enter a comma separated list of extensions (e.g. jpg,png,mp4)"
         )
 
         self.build_title_ui()
@@ -56,35 +62,51 @@ class Tab03(Tab):
         # self.layout.addLayout(file_browserlayout)
         top_ui.setLayout(file_browserlayout)
 
+        extension_label = QLabel("Extension(s): ")
+        file_browserlayout.addWidget(extension_label, 0, 0)
+
+        self.extension_field = QLineEdit()
+        input_validator = QRegExpValidator(
+            QRegExp("[A-Za-z0-9,]+[A-Za-z0-9,.]+")
+            # QRegExp("(?([*]+)|[A-Za-z0-9,]+[A-Za-z0-9,.]+)")
+        )
+        self.extension_field.setValidator(input_validator)
+        file_browserlayout.addWidget(self.extension_field, 0, 1)
+        self.extension_field.setText("exr,jpg,png")
+
+        self.any_extension = QCheckBox("Any Extension")
+        self.any_extension.clicked.connect(self.any_extension_check)
+        file_browserlayout.addWidget(self.any_extension, 0, 2)
+
         self.src_label = QLabel("Source folder: ")
-        file_browserlayout.addWidget(self.src_label, 0, 0)
+        file_browserlayout.addWidget(self.src_label, 1, 0)
 
         self.src_field = QLineEdit()
-        file_browserlayout.addWidget(self.src_field, 0, 1)
+        file_browserlayout.addWidget(self.src_field, 1, 1)
 
         browse_button = QPushButton("Browse")
         browse_button.clicked.connect(lambda: utils.open_file_browser(self.src_field))
-        file_browserlayout.addWidget(browse_button, 0, 2)
-        
+        file_browserlayout.addWidget(browse_button, 1, 2)
+
         self.dst_label = QLabel("Destination folder: ")
-        file_browserlayout.addWidget(self.dst_label, 1, 0)
+        file_browserlayout.addWidget(self.dst_label, 2, 0)
 
         self.dst_field = QLineEdit()
-        file_browserlayout.addWidget(self.dst_field, 1, 1)
+        file_browserlayout.addWidget(self.dst_field, 2, 1)
 
         browse_button = QPushButton("Browse")
         browse_button.clicked.connect(lambda: utils.open_file_browser(self.dst_field))
-        file_browserlayout.addWidget(browse_button, 1, 2)
+        file_browserlayout.addWidget(browse_button, 2, 2)
 
         self.top_layout.addWidget(top_ui)
 
     def run(self):
         """Move hidden files."""
         src_check, messages, src_path = utils.check_paths(self.src_field, "Source Field")
-        self.terminal.error(messages)
+        self.terminal.info(messages)
         dst_check, messages, glb.DEST_DIR = utils.check_paths(self.dst_field, "Destination Field")
-        self.terminal.error(messages)
-        if not all([src_check, dst_check]):
+        self.terminal.info(messages)
+        if not any([src_check, dst_check]):
             return
 
         glb.SRC_DIR_FILES = utils.scan_dir(
@@ -94,32 +116,41 @@ class Tab03(Tab):
         # Build temp destination paths
         utils.get_all_dst_dir_paths()
         utils.clean_dst_files()
-
         utils.build_temp_dst_paths()
 
-        glb.SRC_DIR_FILES = utils.find_hidden()
+        # Filter by extension
+        if not self.any_extension.isChecked():
+            utils.filter_by_extension(self.extension_field.text().split(","))
+
         if not glb.SRC_DIR_FILES:
-            self.terminal.info("No hidden files found.")
             return
 
         utils.rename_duplicates()
+        pp(glb.SRC_DIR_FILES)
 
-        for path, details in glb.SRC_DIR_FILES.items():
-            self.terminal.info(f"{path} --> {details['final_dest_path']}")
+        for src_path, details in glb.SRC_DIR_FILES.items():
+            self.terminal.info(f"{src_path} --> {details['final_dest_path']}")
 
         sizes = sorted([size["size"] for name, size in glb.SRC_DIR_FILES.items()])
 
         stats = [
-            f"\nTotal hidden files found: {len(glb.SRC_DIR_FILES)}",
+            f"\nTotal files found: {len(glb.SRC_DIR_FILES)}",
             f"Smallest: {min(sizes)}Mb, Largest: {max(sizes)}Mb",
             f"\n{'-' * 20}\n"
         ]
         self.terminal.info("\n".join(stats))
 
-        if self.dry_run_checkbox.checkState() == Qt.CheckState.Checked:
+        if self.dry_run_checkbox.isChecked():
             return
 
         for path, details in glb.SRC_DIR_FILES.items():
             move(path, details["final_dest_path"])
 
         self.terminal.info("Moved files to destination folder.")
+
+    def any_extension_check(self):
+        """Execute when the 'any extension' checkbox is clicked."""
+        if self.any_extension.isChecked():
+            self.extension_field.setDisabled(True)
+        else:
+            self.extension_field.setEnabled(True)
