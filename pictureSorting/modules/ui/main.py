@@ -62,8 +62,8 @@ class MainWindow(QMainWindow):
         self.create_menu_actions()
         self.create_menubar()
 
-        self.current_tab_index = 4
-        self.tabs.setCurrentIndex(4)
+        self.current_tab_index = 1
+        self.tabs.setCurrentIndex(1)
 
 
     def create_menu_actions(self):

@@ -64,3 +64,4 @@ class Tab00(Tab):
     def mouseReleaseEvent(self, event):
         self.parent.tabs.setCurrentIndex(self.previous_tab)
 
+# TODO: show this tab at the bgining and from menuBar/.../About

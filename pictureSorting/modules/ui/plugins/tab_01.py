@@ -36,6 +36,9 @@ class Tab01(Tab):
         self.build_execute_ui()
         self.build_terminal_ui()
 
+        self.src_dir_files_pic: dict = {}
+        self.src_dir_files_mov: dict = {}
+
         self.src_field.setText("/home/fuku/Desktop/test")
         self.dst_pic_field.setText("/home/fuku/Desktop/test_pic_trash")
         self.dst_mov_field.setText("/home/fuku/Desktop/test_mov_trash")
@@ -95,8 +98,8 @@ class Tab01(Tab):
         """Sort pictures.
 
         Move image and movie files to appropriate location based on the date.
-        Rename duplicate files to force the relocation.
-        !!DO NOT RUN THIS IN ALREADY ORGANIZED BY DATE FOLDERS. OTHERWISE ALL
+        Append _BIS_ to duplicate file names to avoid conflicts or overwriting.
+        !!DO NOT RUN THIS FROM ALREADY ORGANIZED BY DATE FOLDERS. OTHERWISE, ALL
         FILES WILL HAVE __BIS__ APPENDED TO THEIR NAME!!!"""
         # holds the type of media (pict, mov), its src and dst paths and a
         # custom filter to filter in only the files that adhere to the
@@ -187,7 +190,7 @@ class Tab01(Tab):
 
 
     def checks(self, media_paths) -> bool:
-        """Run all tests on the pahts. Populate / modify media_paths.
+        """Run all tests on the paths. Populate / modify media_paths.
 
         Returns:
             bool
