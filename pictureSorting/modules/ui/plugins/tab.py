@@ -1,8 +1,13 @@
 """Neutral tab.
 With info about version, available functions, a kind of bg image, ..."""
+from pathlib import Path
+from pprint import pprint as pp
+import shutil
+
 from Qt.QtWidgets import (
     QPushButton,
     QCheckBox,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -57,10 +62,6 @@ class Tab(QWidget):
         #  parameter of each tab before the super call.
         # self.build_top_ui()
         # self.build_bottom_ui()
-
-    def run(self):
-        """Run the command of this tab."""
-        pass
 
     @property
     def about_text(self):
@@ -143,3 +144,45 @@ class Tab(QWidget):
         self.terminal = Terminal(self)
         # self.bottom_layout.addWidget(self.terminal)
         self.splitter.addWidget(self.terminal)
+
+
+    def run(self):
+        """Run the command of this tab."""
+        pass
+
+
+    def move(self, src_path: Path, dest_path: Path):
+        """Move a path to another destination.
+
+        Args:
+            src_path (Path): The source path.
+            dest_path (Path): The destination path.
+
+        Returns:
+            bool: True if the move was successful, False otherwise.
+        """
+        if dest_path.exists():
+            self.terminal.error(
+                f"Failed to move {src_path} to {dest_path}"
+            )
+            return False
+        shutil.move(src_path, dest_path)
+        return True
+
+    def open_file_browser(self, target_field: str) -> None:
+        # TODO: if target field already has a path, make the file dialog open up
+        #  in that path.
+        target = Path().home()
+        if target_field.text():
+            target = str(Path(target_field.text()).absolute())
+        print("Target", target)
+        file_dialog = QFileDialog()
+        file_dialog.setOption(QFileDialog.DontUseNativeDialog)
+        file_dialog.setDirectory(target) # Does not work!!! :(
+
+        # selected_dir = QFileDialog.getExistingDirectory(None, target)
+
+        selected_dir = file_dialog.getExistingDirectory(
+            caption="Select a folder"
+        )
+        target_field.setText(selected_dir)

@@ -51,7 +51,6 @@ def build_temp_dst_paths() -> Path:
         values["temp_dest_path"] = glb.DEST_DIR / path.parts[-1]
 
 
-
 def check_existing_filename(folder, file_name):
     """Checks if a file with the same name and extension already exists in the
     folder.
@@ -118,19 +117,19 @@ def clean_dst_files():
         glb.DEST_DIR_FILES[i] = Path(str(path).replace("_BIS_", ""))
 
 
-def delete_xmp_files(folder):
-    files = list(scan_dir(folder))
-    counter = 0
-    for file in files:
-        if os.path.splitext(file)[1].lower() in [".xmp"]:
-            try:
-                shutil.move(file, "/home/fuku/.local/share/Trash/files/")
-                counter += 1
-            except shutil.Error as error:
-                print("File {} already exists in the trash.".format(file))
-                continue
-            print("Moved to trash:", file)
-    print("Moved to trash {} files.".format(counter))
+# def delete_xmp_files(folder):
+#     files = list(scan_dir(folder))
+#     counter = 0
+#     for file in files:
+#         if os.path.splitext(file)[1].lower() in [".xmp"]:
+#             try:
+#                 shutil.move(file, "/home/fuku/.local/share/Trash/files/")
+#                 counter += 1
+#             except shutil.Error as error:
+#                 print("File {} already exists in the trash.".format(file))
+#                 continue
+#             print("Moved to trash:", file)
+#     print("Moved to trash {} files.".format(counter))
 
 
 def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
@@ -204,30 +203,38 @@ def find_hidden() -> Dict[Path, Dict[str, Any]]:
 
 def get_all_dst_dir_paths() -> list:
     """Get all dst dir file paths as a list"""
-    # print("dst_path", glb.DST_DIR)
     files = scan_dir(glb.DEST_DIR, True, None)
     glb.DEST_DIR_FILES = list(files.keys())
-    # print("glb.DST_DIR_FILES")
-    # pp(glb.DST_DIR_FILES)
 
 
-def get_earlier_date(dates):
+def get_earlier_date(dates: dict) -> datetime:
     """Gets the earlier date from a set of dates
-    :param date: list"""
+    Args:
+         date (dict): {'last_modif': datetime,
+            'metadata_change': datetime,
+            'last_access': datetime,
+            ...}
+    Returns:
+        datetime: The earlier date
+"""
     dates = [date for k, date in dates.items()]
     return min(dates)
 
 
 def get_file_dates(image_path: Path, media_type):
     """Gets the exif dates of an image file.
+
+    Pass "picture" as media type for any type of file other than movie.
+
     Args:
         image_path (Path):
+        media_type (str): "videos" or "pictures"
 
     Returns: dict
     """
     dates = {}
 
-    if media_type == "movie":
+    if media_type == "videos":
         probe = ffmpeg.probe(image_path)
         # pp(probe)
         creation_t = None
@@ -264,7 +271,7 @@ def get_file_dates(image_path: Path, media_type):
             pass
         return dates
 
-    elif media_type == "picture":
+    elif media_type == "pictures":
         with open(image_path, 'rb') as image:
             try:
                 tags = exifread.process_file(image)
@@ -282,13 +289,13 @@ def get_file_dates(image_path: Path, media_type):
                 pass
             try:
                 dates["last_modif"] = (
-                    datetime.fromtimestamp(os.path.getmtime(image_path))
+                    datetime.fromtimestamp(image_path.stat().st_mtime)
                 )
                 dates["metadata_change"] = (
-                    datetime.fromtimestamp(os.path.getctime(image_path))
+                    datetime.fromtimestamp(image_path.stat().st_ctime)
                 )
                 dates["last_access"] = (
-                    datetime.fromtimestamp(os.path.getatime(image_path))
+                    datetime.fromtimestamp(image_path.stat().st_atime)
                 )
             except:
                 pass
@@ -353,6 +360,7 @@ def filter_by_extension(extensions: list):
             selected.update({path: v})
     glb.SRC_DIR_FILES = selected
 
+
 def rename_duplicates():
     """Rename duplicated files.
 
@@ -394,26 +402,6 @@ def rename_duplicates():
         details["final_dest_path"] = final_dest_path
 
         existing_file_names.append(temp_path)
-
-
-
-def open_file_browser(target_field):
-    # TODO: if target field already has a path, make the file dialog open up
-    #  in that path.
-    target = Path().home()
-    if target_field.text():
-        target = str(Path(target_field.text()).absolute())
-    print("Targtet", target)
-    file_dialog = QFileDialog()
-    file_dialog.setOption(QFileDialog.DontUseNativeDialog)
-    file_dialog.setDirectory(target) # Does not work!!! :(
-
-    # selected_dir = QFileDialog.getExistingDirectory(None, target)
-
-    selected_dir = file_dialog.getExistingDirectory(
-        caption="Select a folder"
-    )
-    target_field.setText(selected_dir)
 
 
 def reset_test_folders():

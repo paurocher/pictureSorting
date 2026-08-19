@@ -1,8 +1,8 @@
 Launch:
 ```
-`source /home/fuku/PycharmProjects/venvs/universal_py3.8/bin/activate
+source /home/fuku/PycharmProjects/venvs/universal_py3.8/bin/activate
 cd /home/fuku/PycharmProjects/pictureSorting/
-python3 -m pictureSorting
+python3 -m pictureSorting -r
 `````
 
 cx_freeze

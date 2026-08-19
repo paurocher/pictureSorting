@@ -28,7 +28,6 @@ from Qt.QtCore import (
 )
 
 import re
-from shutil import move
 from typing import Tuple, Any, Dict
 
 from ... import utilities as utils
@@ -85,7 +84,7 @@ class Tab04(Tab):
         file_browserlayout.addWidget(self.src_field, 1, 1)
 
         browse_button = QPushButton("Browse")
-        browse_button.clicked.connect(lambda: utils.open_file_browser(self.src_field))
+        browse_button.clicked.connect(lambda: self.open_file_browser(self.src_field))
         file_browserlayout.addWidget(browse_button, 1, 2)
 
         self.dst_label = QLabel("Destination folder: ")
@@ -95,7 +94,7 @@ class Tab04(Tab):
         file_browserlayout.addWidget(self.dst_field, 2, 1)
 
         browse_button = QPushButton("Browse")
-        browse_button.clicked.connect(lambda: utils.open_file_browser(self.dst_field))
+        browse_button.clicked.connect(lambda: self.open_file_browser(self.dst_field))
         file_browserlayout.addWidget(browse_button, 2, 2)
 
         self.top_layout.addWidget(top_ui)
@@ -144,9 +143,9 @@ class Tab04(Tab):
             return
 
         for path, details in glb.SRC_DIR_FILES.items():
-            move(path, details["final_dest_path"])
+            self.move(path, details["final_dest_path"])
 
-        self.terminal.info("Moved files to destination folder.")
+        self.terminal.info("Done.")
 
     def any_extension_check(self):
         """Execute when the 'any extension' checkbox is clicked."""

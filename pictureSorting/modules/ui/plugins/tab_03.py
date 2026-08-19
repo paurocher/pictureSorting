@@ -1,13 +1,8 @@
-"""Move / delete files by extension.
+"""Move hidden files.
 
 This moves all files into one single dir.
 This will not build the year/month/day dir structure.
 """
-
-from functools import lru_cache
-import os
-from pathlib import Path
-from pprint import pprint as pp
 from Qt.QtWidgets import (
     QWidget,
     QCheckBox,
@@ -21,7 +16,6 @@ from Qt.QtWidgets import (
 from Qt.QtCore import (
     Qt,
 )
-from shutil import move
 from typing import Tuple, Any, Dict
 
 from ... import utilities as utils
@@ -63,7 +57,7 @@ class Tab03(Tab):
         file_browserlayout.addWidget(self.src_field, 0, 1)
 
         browse_button = QPushButton("Browse")
-        browse_button.clicked.connect(lambda: utils.open_file_browser(self.src_field))
+        browse_button.clicked.connect(lambda: self.open_file_browser(self.src_field))
         file_browserlayout.addWidget(browse_button, 0, 2)
         
         self.dst_label = QLabel("Destination folder: ")
@@ -73,7 +67,7 @@ class Tab03(Tab):
         file_browserlayout.addWidget(self.dst_field, 1, 1)
 
         browse_button = QPushButton("Browse")
-        browse_button.clicked.connect(lambda: utils.open_file_browser(self.dst_field))
+        browse_button.clicked.connect(lambda: self.open_file_browser(self.dst_field))
         file_browserlayout.addWidget(browse_button, 1, 2)
 
         self.top_layout.addWidget(top_ui)
@@ -84,6 +78,7 @@ class Tab03(Tab):
         self.terminal.error(messages)
         dst_check, messages, glb.DEST_DIR = utils.check_paths(self.dst_field, "Destination Field")
         self.terminal.error(messages)
+
         if not all([src_check, dst_check]):
             return
 
@@ -94,7 +89,6 @@ class Tab03(Tab):
         # Build temp destination paths
         utils.get_all_dst_dir_paths()
         utils.clean_dst_files()
-
         utils.build_temp_dst_paths()
 
         glb.SRC_DIR_FILES = utils.find_hidden()
@@ -120,6 +114,7 @@ class Tab03(Tab):
             return
 
         for path, details in glb.SRC_DIR_FILES.items():
-            move(path, details["final_dest_path"])
+            self.move(path, details["final_dest_path"])
 
-        self.terminal.info("Moved files to destination folder.")
+        self.terminal.info("Done.")
+
