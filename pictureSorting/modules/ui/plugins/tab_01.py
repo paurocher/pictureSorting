@@ -1,8 +1,11 @@
 """Picture Sorting tab."""
+import copy
+from datetime import date
 from pathlib import Path
 from pprint import pprint as pp
 
 from Qt.QtWidgets import (
+    QAction,
     QCheckBox,
     QFileDialog,
     QFrame,
@@ -11,13 +14,17 @@ from Qt.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
+from Qt.QtCore import (
+    Qt,
+)
 
-from ... import globals
+from ... import globals as glb
 from ... import utilities as utils
 from .tab import Tab
 
@@ -25,10 +32,10 @@ class Tab01(Tab):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.action_name = "Sort Pictures"
+        self.action_name = "Sort Media"
         self.about_text = (
-            "Sort pictures by date and move them into a year / month / day "
-            "folder structure in the selected destination folder."
+            "Sort pictures or videos by date and move them into a year / month "
+            "/ day folder structure in the selected destination folder."
         )
 
         self.build_title_ui()
@@ -36,63 +43,50 @@ class Tab01(Tab):
         self.build_execute_ui()
         self.build_terminal_ui()
 
-        self.src_dir_files_pic: dict = {}
-        self.src_dir_files_mov: dict = {}
-
         self.src_field.setText("/home/fuku/Desktop/test")
-        self.dst_pic_field.setText("/home/fuku/Desktop/test_pic_trash")
-        self.dst_mov_field.setText("/home/fuku/Desktop/test_mov_trash")
+        self.dst_field.setText("/home/fuku/Desktop/test_trash")
 
     def build_main_ui(self):
         top_ui = QWidget()
-        top_layout = QVBoxLayout()
-        top_ui.setLayout(top_layout)
+        file_browserlayout = QGridLayout()
+        file_browserlayout.setColumnStretch(1, 1)
         top_ui.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        # self.layout.addLayout(file_browserlayout)
+        top_ui.setLayout(file_browserlayout)
 
-        src_layout = QHBoxLayout()
-        top_layout.addLayout(src_layout)
-        src_label = QLabel("Source folder: ")
-        src_layout.addWidget(src_label)
+        self.mode = QPushButton("Media Type", self)
+        mode_menu = QMenu(self.mode)
+        pic_action = QAction("Pictures", self.mode)
+        pic_action.triggered.connect(lambda: self.generic_action_do("Pictures"))
+        mode_menu.addAction(pic_action)
+        mov_action = QAction("Videos", self.mode)
+        mov_action.triggered.connect(lambda: self.generic_action_do("Videos"))
+        mode_menu.addAction(mov_action)
+        self.mode.setMenu(mode_menu)
+        file_browserlayout.addWidget(self.mode, 0, 0)
+
+        self.src_label = QLabel("Source folder: ")
+        file_browserlayout.addWidget(self.src_label, 1, 0)
+
         self.src_field = QLineEdit()
-        src_layout.addWidget(self.src_field)
-        browse_src_button = QPushButton("Browse")
-        browse_src_button.clicked.connect(lambda: utils.open_file_browser(self.src_field))
-        src_layout.addWidget(browse_src_button)
+        file_browserlayout.addWidget(self.src_field, 1, 1)
 
-        self.pic_group = QGroupBox("Pictures")
-        self.pic_group.setCheckable(True)
-        self.pic_group.setChecked(True)
-        pic_layout = QGridLayout()
-        self.pic_group.setLayout(pic_layout)
-        dst_pic_label = QLabel("Destination folder: ")
-        pic_layout.addWidget(dst_pic_label, 1, 0)
-        self.dst_pic_field = QLineEdit()
-        pic_layout.addWidget(self.dst_pic_field, 1, 1)
-        browse_dst_pic_button = QPushButton("Browse")
-        browse_dst_pic_button.clicked.connect(lambda: utils.open_file_browser(self.dst_pic_field))
-        pic_layout.addWidget(browse_dst_pic_button, 1, 2)
-        top_layout.addWidget(self.pic_group)
+        browse_button = QPushButton("Browse")
+        browse_button.clicked.connect(lambda: self.open_file_browser(self.src_field))
+        file_browserlayout.addWidget(browse_button, 1, 2)
 
-        self.mov_group = QGroupBox("Movies")
-        self.mov_group.setCheckable(True)
-        self.mov_group.setChecked(False)
-        mov_layout = QGridLayout()
-        self.mov_group.setLayout(mov_layout)
-        dst_mov_label = QLabel("Destination folder: ")
-        mov_layout.addWidget(dst_mov_label, 1, 0)
-        self.dst_mov_field = QLineEdit()
-        mov_layout.addWidget(self.dst_mov_field, 1, 1)
-        browse_dst_mov_button = QPushButton("Browse")
-        browse_dst_mov_button.clicked.connect(lambda: utils.open_file_browser(self.dst_mov_field))
-        mov_layout.addWidget(browse_dst_mov_button, 1, 2)
-        top_layout.addWidget(self.mov_group)
+        self.dst_label = QLabel("Destination folder: ")
+        file_browserlayout.addWidget(self.dst_label, 2, 0)
 
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        top_layout.addWidget(separator)
+        self.dst_field = QLineEdit()
+        file_browserlayout.addWidget(self.dst_field, 2, 1)
+
+        browse_button = QPushButton("Browse")
+        browse_button.clicked.connect(lambda: self.open_file_browser(self.dst_field))
+        file_browserlayout.addWidget(browse_button, 2, 2)
 
         self.top_layout.addWidget(top_ui)
+
 
     def run(self):
         """Sort pictures.
@@ -101,145 +95,84 @@ class Tab01(Tab):
         Append _BIS_ to duplicate file names to avoid conflicts or overwriting.
         !!DO NOT RUN THIS FROM ALREADY ORGANIZED BY DATE FOLDERS. OTHERWISE, ALL
         FILES WILL HAVE __BIS__ APPENDED TO THEIR NAME!!!"""
-        # holds the type of media (pict, mov), its src and dst paths and a
-        # custom filter to filter in only the files that adhere to the
-        # media type
-        media_paths = {
-            "picture": {
-                "paths": None,
-                "filter": utils.is_picture
-            },
-            "movie": {
-                "paths": None,
-                "filter": utils.is_movie
-            }
-        }
-        if not self.checks(media_paths):
-            self.end()
 
-        for media_type, path_bundle in media_paths.items():
-            if not path_bundle["paths"]:
-                continue
-            src_path = path_bundle["paths"][0]
-            dst_path = path_bundle["paths"][1]
-            filter = path_bundle["filter"]
-
-            # get paths all from the media src dir
-            paths = utils.scan_dir(
-                src_path, recursive=self.recursive_checkbox.isChecked()
-            )
-            # filter the found files with the media filter
-            valid_paths = [p for p in paths if filter(p)]
-            # print(valid_paths)
-
-            self.terminal.success(
-                f"Found {len(valid_paths)} {media_type} items.<br>"
-            )
-
-            renamed = []
-            not_moved = []
-            for i, path in enumerate(valid_paths):
-                self.terminal.info(
-                    f"\rProcessing item: {i + 1} / {len(valid_paths)}"
-                )
-                self.terminal.info(str(path))
-
-                dates = utils.get_file_dates(path, media_type)
-                # self.terminal.info(str(dates))
-                if not dates:
-                    self.terminal.error(
-                        "No dates. Check file or code because there "
-                        "should at least be a date of creation or some "
-                        "date!!"
-                    )
-                    continue
-                smallest_date = utils.get_earlier_date(dates)
-                # self.terminal.info(f"Smallest date fund: {smallest_date}")
-
-                date_path = utils.build_dates_dst_path(smallest_date)
-                new_dst_path = Path(dst_path) / date_path
-                file_date_name = smallest_date.strftime("%Y%m%d_%H%M%S")
-                full_new_file_path = new_dst_path / file_date_name
-                # Figure out duplicate names
-                utils.rename_duplicates(full_new_file_path)
-                full_new_file_path = full_new_file_path.with_suffix(path.suffix)
-
-                self.terminal.info(f"  new file path: {full_new_file_path}")
-        #
-        #     if not DRY_RUN:
-        #         try:
-        #             shutil.move(path, dest_path)
-        #         except:
-        #             path_parts = os.path.split(path)
-        #             path_parts = os.path.splitext(path_parts[-1])
-        #             new_file_name = "".join([path_parts[0], "__BIS__", path_parts[1]])
-        #             new_file_dest_path = os.path.join(dest_path, new_file_name)
-        #             try:
-        #                 shutil.move(path, new_file_dest_path)
-        #                 renamed.append([path, new_file_dest_path])
-        #             except:
-        #                 not_moved.append(path)
-        #                 continue
-        #             # print()
-        # if renamed:
-        #     pp(renamed)
-            if len(media_paths) > 1:
-                self.terminal.info("\n-- -- --\n")
-
-        self.end()
-
-
-    def checks(self, media_paths) -> bool:
-        """Run all tests on the paths. Populate / modify media_paths.
-
-        Returns:
-            bool
-        """
-        if not self.pic_group.isChecked() and not self.mov_group.isChecked():
+        if self.mode.text() not in  ["Pictures", "Videos"]:
             self.terminal.warning(
-                "Please select at least one type of media to process."
+                "Please select a media type to process."
             )
             return False
 
-        dst_pick_check, dst_mov_check = True, True
-        check_messages = []
-        # path field is not empty, path exists, path is dir
-        src_check, messages, src_path = utils.check_paths(
-            self.src_field, "Source Field"
+        src_check, messages, src_path = self.check_paths(self.src_field, "Source Field")
+        self.terminal.error(messages)
+        dst_check, messages, self.dest_dir = self.check_paths(self.dst_field, "Destination Field")
+        self.terminal.error(messages)
+        if not any([src_check, dst_check]):
+            return False
+
+        self.src_dir_files = self.scan_dir(
+            src_path, recursive=self.recursive_checkbox.isChecked()
         )
-        check_messages.append(messages)
 
-        if self.pic_group.isChecked():
-            # check path field
-            dst_pic_check, messages, dst_pic_path = utils.check_paths(
-                self.dst_pic_field, "Pictures Destination Field"
-            )
-            check_messages.append(messages)
-            if all([src_check, dst_pick_check]):
-                media_paths["picture"]["paths"] = (src_path, dst_pic_path)
-        else:
-            media_paths.pop("picture")
+        # filter by extension
+        file_filter = glb.IMAGE_FORMATS
+        if self.mode.text() == "Videos":
+            file_filter = glb.VIDEO_FORMATS
+        self.src_dir_files = utils.filter_by_extension(
+            self.src_dir_files, file_filter
+        )
 
-        if self.mov_group.isChecked():
-            # check path field
-            dst_mov_check, messages, dst_mov_path = utils.check_paths(
-                self.dst_mov_field, "Movies Destination Field"
-            )
-            check_messages.append(messages)
-            if all([src_check, dst_mov_check]):
-                media_paths["movie"]["paths"] = (src_path, dst_mov_path)
-        else:
-            media_paths.pop("movie")
+        sizes = sorted([size["size"] for name, size in self.src_dir_files.items()])
+        stats = [
+            f"\nTotal files found: {len(self.src_dir_files)}",
+            f"Smallest: {min(sizes)}Mb, Largest: {max(sizes)}Mb",
+            f"\n{'-' * 20}\n"
+        ]
+        self.terminal.info("\n".join(stats))
 
-        # assert that all tests passed
-        if not all([src_check, dst_pic_check, dst_mov_check]):
-            check_messages = [m for m in check_messages if m]
-            self.terminal.warning("<br>".join(check_messages))
-            return False
+        # Get all the paths that exist in the dst folder structure. Later we
+        #  will compare to the new paths to check for duplicates
+        self.get_all_dst_dir_paths()
+        # self.clean_dst_files()
 
-        return True
+        for file, details in self.src_dir_files.items():
+            # find file dates out
+            details["dates"] = utils.get_file_dates(file, self.mode.text().lower())
+            details["dates"]["smaller_date"] = utils.get_earlier_date(details["dates"])
 
-    def end(self):
-        """This is the end, my only fiend, the end."""
+            # Create the dir structures based on the smaller date (non-destructive)
+            root_path = self.build_date_dir(details["dates"]["smaller_date"])
+
+            # Build temp destination paths
+            details["temp_dest_path"] = root_path / file.parts[-1]
+
+            # Rename duplicates
+            self.rename_duplicates(details)
+
+            self.terminal.info(f"{file} --> {details['final_dest_path']}")
+
+            if not self.dry_run_checkbox.checkState() == Qt.CheckState.Checked:
+                # Move files
+                self.move(file, details["final_dest_path"])
+        # pp(self.src_dir_files)
+
+
         self.terminal.info(f"\n{'- ' * 40}\n")
 
+    def build_date_dir(self, date: date):
+        """Build a destination folder path based on a date.
+
+        Args:
+            date (date)
+
+        Returns: Path
+        """
+        year = str(date.year)
+        month = "{:0>2}".format(date.month)
+        day = "{:0>2}".format(date.day)
+        path = self.dest_dir.joinpath(year, month, day)
+        # print(path)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def generic_action_do(self, text: str) -> None:
+        self.mode.setText(text)
