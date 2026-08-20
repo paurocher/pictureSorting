@@ -1,21 +1,9 @@
 """Place to define global variables."""
 
+# All in lower case
 ALL_FORMATS = [
     '+iaio 1',
-    '3GP',
     '3gp',
-    'AVI',
-    'CR2',
-    'DAT',
-    'DS_Store',
-    'GIF',
-    'JPG',
-    'MOV',
-    'MP4',
-    'MPO',
-    'MTS',
-    'PNG',
-    'TIF',
     '\uf029'
     'app',
     'avi',
@@ -26,11 +14,13 @@ ALL_FORMATS = [
     'crypt1',
     'crypt12',
     'dat',
+    'dat',
     'db',
     'dd',
     'dng',
     'docx',
     'dpx',
+    'ds_store',
     'dv',
     'fum',
     'gif',
@@ -46,34 +36,33 @@ ALL_FORMATS = [
     'mp3',
     'mp4',
     'mpg',
+    'mpo',
+    'mts',
     'nib',
     'opus',
     'pdf',
     'plist',
     'png',
+    'png',
     'psd',
     'strings',
     'svg',
+    'tif',
     'tif',
     'tiff',
     'webp',
     'wmv',
     'xcf',
     'xmp',
-    'zip Mâcon 2',
-    'zip Mâcon',
+    'zip mâcon 2',
+    'zip mâcon',
     'zip cluny 2',
     'zip cluny',
     'zip',
 ]
 
-
+# All in lower case
 IMAGE_FORMATS = [
-    'CR2',
-    'GIF',
-    'JPG',
-    'PNG',
-    'TIF',
     'cr2',
     'dng',
     'dpx',
@@ -89,12 +78,9 @@ IMAGE_FORMATS = [
     'tiff',
 ]
 
+# All in lower case
 VIDEO_FORMATS = [
-    '3GP',
     '3gp',
-    'AVI',
-    'MOV',
-    'MP4',
     'avi',
     'h264',
     'm4a',
@@ -111,7 +97,3 @@ ACTIONS = [
     "b",
     "c"
 ]
-
-DEST_DIR = None
-SRC_DIR_FILES = []
-DEST_DIR_FILES = []
