@@ -51,7 +51,7 @@ class Tab04(Tab):
         self.build_terminal_ui()
 
         self.src_field.setText("/home/fuku/Desktop/test")
-        self.dst_field.setText("/home/fuku/Desktop/test_pic_trash")
+        self.dst_field.setText("/home/fuku/Desktop/test_trash")
 
     def build_main_ui(self):
         top_ui = QWidget()
@@ -101,39 +101,40 @@ class Tab04(Tab):
 
     def run(self):
         """Move hidden files."""
-        src_check, messages, src_path = utils.check_paths(self.src_field, "Source Field")
+        src_check, messages, src_path = self.check_paths(self.src_field, "Source Field")
         self.terminal.info(messages)
-        dst_check, messages, glb.DEST_DIR = utils.check_paths(self.dst_field, "Destination Field")
+        dst_check, messages, self.dest_dir = self.check_paths(self.dst_field, "Destination Field")
         self.terminal.info(messages)
         if not any([src_check, dst_check]):
             return
 
-        glb.SRC_DIR_FILES = utils.scan_dir(
+        self.src_dir_files = self.scan_dir(
             src_path, recursive=self.recursive_checkbox.isChecked()
         )
 
         # Build temp destination paths
-        utils.get_all_dst_dir_paths()
-        utils.clean_dst_files()
-        utils.build_temp_dst_paths()
+        self.get_all_dst_dir_paths()
+        # self.clean_dst_files()
+        self.build_temp_dst_paths()
 
         # Filter by extension
         if not self.any_extension.isChecked():
-            utils.filter_by_extension(self.extension_field.text().split(","))
+            self.src_dir_files = utils.filter_by_extension(
+                self.src_dir_files,
+                self.extension_field.text().split(",")
+            )
 
-        if not glb.SRC_DIR_FILES:
+        if not self.src_dir_files:
             return
 
-        utils.rename_duplicates()
-        pp(glb.SRC_DIR_FILES)
-
-        for src_path, details in glb.SRC_DIR_FILES.items():
+        pp(self.dest_dir_files)
+        for src_path, details in self.src_dir_files.items():
+            self.rename_duplicates(details)
             self.terminal.info(f"{src_path} --> {details['final_dest_path']}")
 
-        sizes = sorted([size["size"] for name, size in glb.SRC_DIR_FILES.items()])
-
+        sizes = sorted([size["size"] for name, size in self.src_dir_files.items()])
         stats = [
-            f"\nTotal files found: {len(glb.SRC_DIR_FILES)}",
+            f"\nTotal files found: {len(self.src_dir_files)}",
             f"Smallest: {min(sizes)}Mb, Largest: {max(sizes)}Mb",
             f"\n{'-' * 20}\n"
         ]
@@ -142,10 +143,10 @@ class Tab04(Tab):
         if self.dry_run_checkbox.isChecked():
             return
 
-        for path, details in glb.SRC_DIR_FILES.items():
+        for path, details in self.src_dir_files.items():
             self.move(path, details["final_dest_path"])
 
-        self.terminal.info("Done.")
+        self.terminal.info("\nDone moving files.")
 
     def any_extension_check(self):
         """Execute when the 'any extension' checkbox is clicked."""
