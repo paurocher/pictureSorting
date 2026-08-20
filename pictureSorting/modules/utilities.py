@@ -27,30 +27,6 @@ from pictureSorting.modules import globals as glb
 logging.basicConfig(level=logging.ERROR)
 
 
-def build_dates_dst_path(date):
-    """Build a destination folder path based on a date.
-    Args:
-        date: datetime.date
-
-    Returns: Path
-    """
-    year = str(date.year)
-    month = "{:0>2}".format(date.month)
-    day = "{:0>2}".format(date.day)
-    path = Path().joinpath(year, month, day)
-
-    return path
-
-
-def build_temp_dst_paths() -> Path:
-    """Build temp dst path.
-
-    The resulting path ha not been checked for duplicates."""
-
-    for path, values in glb.SRC_DIR_FILES.items():
-        values["temp_dest_path"] = glb.DEST_DIR / path.parts[-1]
-
-
 def check_existing_filename(folder, file_name):
     """Checks if a file with the same name and extension already exists in the
     folder.
@@ -66,55 +42,6 @@ def check_existing_filename(folder, file_name):
         return True
     return False
 
-
-def check_paths(field_obj, field_name) -> Tuple[bool, str, Path]:
-    """Make sure the UI path field is not empty and the path exists.
-
-    If all is good: return True, no messages to print to terminal, and the
-    string converted to a Path().
-    If something is wrong: return false, message of what went wrong to print
-    to terminal, and None.
-
-    Args:
-        field_obj ():
-        field_name ():
-
-    Returns:
-        tuple:
-            bool: whether all checks passed
-            str: the messages to print to the terminal
-            Path: src path
-    """
-    checks_passed = True
-    message = []
-
-    field_text = field_obj.text()
-
-    if not field_text:
-        message.append(f"{field_name} must not be empty.")
-        checks_passed = False
-        return checks_passed, "<br>".join(message), None
-    path = Path(field_text)
-    if not path.exists():
-        message.append(f"{field_name} path does not exist.")
-        checks_passed = False
-        return checks_passed, "<br>".join(message), None
-    if not path.is_dir():
-        message.append(f"{field_name} path is not a directory.")
-        checks_passed = False
-        return checks_passed, "<br>".join(message), None
-
-    return checks_passed, "<br>".join(message), path
-
-
-def clean_dst_files():
-    """Remove the _BIS_ from the dest paths.
-
-    So each instance of a pat counts as one when we rename the file
-    paths to move.
-    """
-    for i, path in enumerate(glb.DEST_DIR_FILES):
-        glb.DEST_DIR_FILES[i] = Path(str(path).replace("_BIS_", ""))
 
 
 # def delete_xmp_files(folder):
@@ -188,21 +115,9 @@ def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
     print("Total files removed: {}".format(len(removed)))
 
 
-def find_hidden() -> Dict[Path, Dict[str, Any]]:
-    """Find hidden paths starting with "." from a list of paths.
-
-    Returns (dict):
-        Path: {size: float}
-    """
-    hidden_paths = {}
-    for path, values in glb.SRC_DIR_FILES.items():
-        if path.stem.startswith("."):
-            hidden_paths[path] = values
-    return hidden_paths
-
-
 def get_all_dst_dir_paths() -> list:
     """Get all dst dir file paths as a list"""
+    # DONE on tab01: move to tab.py
     files = scan_dir(glb.DEST_DIR, True, None)
     glb.DEST_DIR_FILES = list(files.keys())
 
@@ -348,60 +263,20 @@ def is_picture(path: Path):
     return False
 
 
-def filter_by_extension(extensions: list):
+def filter_by_extension(files: dict, extensions: list):
     """Filter out paths that do not have the specified extensions.
 
         Args:
+            files (dict): {path: ...}
             extensions: list of extensions to filter by
     """
     selected = {}
-    for path, v in glb.SRC_DIR_FILES.items():
-        if path.suffix[1:] in extensions:
+
+    for path, v in files.items():
+        # Remove the dot before the extension
+        if path.suffix[1:].lower() in extensions:
             selected.update({path: v})
-    glb.SRC_DIR_FILES = selected
-
-
-def rename_duplicates():
-    """Rename duplicated files.
-
-    Iterates through all keys of a paths dict and adds the "rename" key if
-    the path needs a __BIS__ appended to it
-
-    I am doing it like this, instead of on they fly by listing the dst dir.
-    If DRY_RUN is on, files will not be moved to their dst location,
-    so each time I list the dst dir to figure out duplicate names I will
-    allways get the same list (of the already existing files), thus I will
-    never be able to figure out if there are duplicate names.
-
-    The dst_paths list will grow each time we
-
-    glb.SRC_DIR_FILES structure:
-        {Path()1: {"size": float, "temp_dest_path": str}}
-
-    Returns:
-        dict: Path {"size": float, "temp_dest_path": str, "final_dest_path": str}
-
-    """
-    # print("src_paths")
-    # pp(glb.SRC_DIR_FILES)
-    # print("dst_paths")
-    # pp(glb.DEST_DIR_FILES)
-
-    existing_file_names = copy.copy(glb.DEST_DIR_FILES)
-
-    for path, details in glb.SRC_DIR_FILES.items():
-        details["final_dest_path"] = None
-        temp_path = details["temp_dest_path"]
-        stem = temp_path.stem
-        suffix = temp_path.suffix
-
-        count = len([s for s in existing_file_names if s == temp_path])
-        stem = stem + ("_BIS_" * count)
-        final_dest_path = glb.DEST_DIR / stem
-        final_dest_path = final_dest_path.with_suffix(suffix)
-        details["final_dest_path"] = final_dest_path
-
-        existing_file_names.append(temp_path)
+    return selected
 
 
 def reset_test_folders():
@@ -414,7 +289,7 @@ def reset_test_folders():
     print("  ", command)
     os.chdir(command)
 
-    command = ["rm", "-rf", "test", "test_pic_trash", "test_mov_trash"]
+    command = ["rm", "-rf", "test", "test_trash"]
     print("  ", command)
     subprocess.run(command)
 
@@ -422,48 +297,9 @@ def reset_test_folders():
     print("  ", command)
     subprocess.run(command)
 
-    command = ["cp", "-r", "test_pic_trash_backup", "test_pic_trash"]
+    command = ["cp", "-r", "test_trash_backup", "test_trash"]
     print("  ", command)
     subprocess.run(command)
-
-    command = ["mkdir", "test_mov_trash"]
-    print("  ", command)
-    subprocess.run(command)
-
-
-def scan_dir(
-        path: Path,
-        recursive: bool = True,
-        documents: bool = None) -> List[Path]:
-    """Scans a dir and outputs all documents paths.
-
-    Args:
-        path (Path):
-        recursive (bool):
-        documents (bool):
-
-    Returns:
-        dict : {Path: {"size": int}}
-    """
-    if not documents:
-        documents = []
-
-    path_obj = Path(path)
-
-    if recursive:
-        # Use rglob for recursive search
-        for item in path_obj.rglob("*"):
-            if item.is_file():
-                documents.append(item)
-    else:
-        # Use iterdir for non-recursive search
-        for item in path_obj.iterdir():
-            if item.is_file():
-                documents.append(item)
-
-    documents = {d: {"size": get_size(d)} for d in documents}
-
-    return documents
 
 
 def seconds_to_date(seconds):
