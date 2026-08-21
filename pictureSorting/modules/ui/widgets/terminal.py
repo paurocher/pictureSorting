@@ -40,7 +40,7 @@ class Terminal(QTextEdit):
             message(str): message to append
         """
         with Terminal.log_file_path.open("a") as f:
-            f.write(f"\n{message}")
+            f.write(f"\n{self.parent.action_name} :: {message}")
 
     def create_log_file(self):
         """Create the log file.

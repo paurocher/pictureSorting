@@ -38,7 +38,7 @@ class Tab04(Tab):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.action_name = "04 Move files by extension"
+        self.action_name = "Move files by extension"
         self.about_text = (
             "Find and move files with a specific extension to a specific "
             "folder.\n"

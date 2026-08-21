@@ -30,7 +30,7 @@ class Tab03(Tab):
 
         self.parent = parent
 
-        self.action_name = "03 Move hidden files"
+        self.action_name = "Move hidden files"
         self.about_text = (
             "Find and move hidden files (starting with a dot) to a specific "
             "folder.\n"
