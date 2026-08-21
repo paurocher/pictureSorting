@@ -28,6 +28,8 @@ class Tab03(Tab):
     def __init__(self, parent):
         super().__init__(parent)
 
+        self.parent = parent
+
         self.action_name = "03 Move hidden files"
         self.about_text = (
             "Find and move hidden files (starting with a dot) to a specific "

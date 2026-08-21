@@ -69,11 +69,11 @@ def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
 
     Returns:
     """
-    print("Scaning folder structure: {}".format(path))
+    # print("Scaning folder structure: {}".format(path))
     files = scan_dir(path)
     files_info = {}
     for i, file in enumerate(files):
-        print("\rProcessing file: {} / {}".format(i+1, len(files)), end="")
+        # print("\rProcessing file: {} / {}".format(i+1, len(files)), end="")
         with open(file, 'rb') as image:
             size = os.stat(file).st_size / (1024 * 1024)
             crc = width = height = date = size = None
@@ -84,7 +84,7 @@ def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
                             "height": height,
                             "exif_date": date,
                             "size": size}
-    print("\nLooking for duplicates ...")
+    # print("\nLooking for duplicates ...")
     removed = []
     for i, (file, values) in enumerate(files_info.items()):
         # print("\rLooking for duplicates {}".format("." * (i % 20)), end="")
@@ -111,8 +111,8 @@ def find_duplicates(path, trash="/media/fuku/T7/temp_trash"):
 
 
                 removed.append(search_file)
-    print()
-    print("Total files removed: {}".format(len(removed)))
+    # print()
+    # print("Total files removed: {}".format(len(removed)))
 
 
 def get_all_dst_dir_paths() -> list:

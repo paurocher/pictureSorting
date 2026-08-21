@@ -1,4 +1,6 @@
+from datetime import datetime
 from pathlib import Path
+
 from Qt.QtWidgets import (
     QMainWindow,
     QApplication,
@@ -38,6 +40,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.datetime = datetime.now()
+
         self.setStyleSheet(stylesheet.read_text())
 
         self.setWindowTitle("Picture Sorter")
@@ -50,7 +54,7 @@ class MainWindow(QMainWindow):
         self.central_layout.setContentsMargins(5, 10, 5, 10)
         self.setCentralWidget(self.central_widget)
 
-        # this one mainy helps us keep track of what was the satus before we
+        # this one mainly helps us keep track of what was the satus before we
         #  switch to 'help' so we can go back to it when we click on the
         #  help panel
         self.current_tab_index = 0
@@ -63,8 +67,7 @@ class MainWindow(QMainWindow):
         self.create_menubar()
 
         self.current_tab_index = 1
-        self.tabs.setCurrentIndex(1)
-
+        self.tabs.setCurrentIndex(3)
 
     def create_menu_actions(self):
         """Create the actions for the menu bar.
@@ -159,6 +162,9 @@ class MainWindow(QMainWindow):
             self.mode_menu.add_action(i, object.action_name)
         # self.splitter.addWidget(self.tabs)
         self.central_layout.addWidget(self.tabs)
+
+        # create log file
+        self.tabs.widget(1).terminal.create_log_file()
 
     # def create_terminal(self):
     #     self.terminal = Terminal(self)

@@ -127,7 +127,7 @@ class Tab04(Tab):
         if not self.src_dir_files:
             return
 
-        pp(self.dest_dir_files)
+        # pp(self.dest_dir_files)
         for src_path, details in self.src_dir_files.items():
             self.rename_duplicates(details)
             self.terminal.info(f"{src_path} --> {details['final_dest_path']}")

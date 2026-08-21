@@ -250,7 +250,7 @@ class Tab(QWidget):
         target = Path().home()
         if target_field.text():
             target = str(Path(target_field.text()).absolute())
-        print("Target", target)
+        # print("Target", target)
         file_dialog = QFileDialog()
         file_dialog.setOption(QFileDialog.DontUseNativeDialog)
         file_dialog.setDirectory(target) # Does not work!!! :(
@@ -289,7 +289,7 @@ class Tab(QWidget):
         # print(temp_path)
         # print(root)
 
-        print(f"Renaming path {temp_path}")
+        # print(f"Renaming path {temp_path}")
         """
         Old method: 
           I removed all '_BIS_'s found in all dst paths, 
